@@ -18,7 +18,7 @@ advances exactly 1 cell per unit of code time (verified numerically).
 import os, sys
 sys.path.append("../../")
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = os.environ.get("GPU", "1")
+os.environ["CUDA_VISIBLE_DEVICES"] = os.environ.get("GPU", "0")
 
 import jax
 import jax.numpy as jnp
