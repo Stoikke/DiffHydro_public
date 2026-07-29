@@ -110,4 +110,3 @@ class UnitParser:
     @staticmethod
     def _normalize_unit(unit: str) -> str:
         return "".join(unit.strip().split())
-

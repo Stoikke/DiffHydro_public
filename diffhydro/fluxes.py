@@ -15,7 +15,8 @@ class ConvectiveFlux:
                  EquationManager,
                  Solver,
                  Recon,
-                 positivity=True
+                 positivity=True,
+                 dx=1,
                  ):
         self.eq_manage = EquationManager
         self.solver = Solver
@@ -23,7 +24,8 @@ class ConvectiveFlux:
 
         self.positivity = positivity
         self.positivity_stencil = recon.WENO1()
-        self.dx_o = 1
+        # Taille de cellule en unites code : doit etre la meme que hydro(dx=...).
+        self.dx_o = dx
 
         try:  # 3d
             self.flux_shapes = (
@@ -219,7 +221,8 @@ class ConductiveFlux:
                  Solver,
                  Recon,
                  positivity=False,
-                 zeta=0
+                 zeta=0,
+                 dx=1,
                  ):
         self.eq_manage = EquationManager
         self.solver = Solver
@@ -227,7 +230,8 @@ class ConductiveFlux:
         self.zeta = zeta
         self.positivity = positivity
         self.positivity_stencil = recon.WENO1()
-        self.dx_o = 1
+        # Taille de cellule en unites code : doit etre la meme que hydro(dx=...).
+        self.dx_o = dx
 
         try:  # 3d
             self.flux_shapes = (
@@ -527,18 +531,19 @@ class ConductiveFlux:
 
 class ConvectiveFlux_Radiative_transfer:
     def __init__(self,
-                 EquationManager,
-                 Solver,
-                 Recon,
-                 positivity=True
-                 ):
+                EquationManager,
+                Solver,
+                Recon,
+                positivity=True,
+                dx=1,
+                ):
         self.eq_manage = EquationManager
         self.solver = Solver
         self.recon = Recon
 
         self.positivity = positivity
         self.positivity_stencil = recon.WENO1()
-        self.dx_o = 1
+        self.dx_o = dx
 
         try:  # 3d
             self.flux_shapes = (
@@ -800,7 +805,7 @@ class ConvectiveFlux_Radiative_transfer:
         # sol = sol.at[2].set(F_y_normalize)
         # sol = sol.at[3].set(F_z_normalize)
         # positivity fix (full state)
-        self._debug_grid_stats(sol, eq, "GRID AFTER NORMALISATION", ax)
+        # self._debug_grid_stats(sol, eq, "GRID AFTER NORMALISATION", ax)
         if self.positivity:
             conservative_xi_L, primitives_xi_L, count_L = self.compute_positivity_preserving_interpolation(
                 primitives=primitives,
@@ -812,8 +817,8 @@ class ConvectiveFlux_Radiative_transfer:
                 primitives_xi_j=primitives_xi_R,
                 j=1,
                 axis=ax)
-          
-        self._debug_grid_stats(sol, eq, "PRIMITIVES LEFT AFTER RECON", ax)
+        
+        # self._debug_grid_stats(sol, eq, "PRIMITIVES LEFT AFTER RECON", ax)
 
         ####### mettre un check soit enlever la reconstruction et aussi mettre un check ici 
         # -------------------------------
@@ -893,6 +898,7 @@ class ConvectiveFlux_Radiative_transfer:
         dim = sol.ndim - 1
         dx = float(self.dx_o)
         c = float(eq.light_speed)
+        # jax.debug.print('Light speed: {}', c)
 
         inv_dt = dim * c / dx
         # print(eq.cfl / (inv_dt + eq.eps))

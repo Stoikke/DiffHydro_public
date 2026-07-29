@@ -91,4 +91,3 @@ def _parse_base_scale(value: Any, expected_dim: str, parser: UnitParser) -> floa
         parsed = parser.parse(value, expected_dim=expected_dim)
         return parsed.cgs_value
     return float(value)
-

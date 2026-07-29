@@ -113,4 +113,3 @@ def pressure_from_Trho(
     p_cgs = rho_arr * cu.rho_cgs * cu.kB_cgs * T_k / (cu.mu * cu.mH_cgs)
     p_code = p_cgs / cu.P_cgs
     return p_code if np.asarray(p_code).ndim > 0 else float(p_code)
-

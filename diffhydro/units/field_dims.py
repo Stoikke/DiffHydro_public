@@ -13,4 +13,3 @@ FIELD_DIMS = {
     "Fy_gamma": "radiation_flux",
     "Fz_gamma": "radiation_flux",
 }
-

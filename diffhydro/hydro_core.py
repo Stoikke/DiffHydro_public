@@ -140,7 +140,9 @@ class hydro:
                 snapshot_prefix: str = "fields",
                 track_time: bool = True,
                 debug_fixed_dt: float | None = None,
-                periodic_flux_divergence: bool = True):
+                periodic_flux_divergence: bool = True,
+                dx: float = 1.0
+                ):
         # Fixed simulation parameters (rather static with respect to optimization).
    #     self.init_dt = init_dt # tiny starting timestep to smooth out anything too sharp
         self.splitting_schemes = splitting_schemes #strang splitting for x,y,z sweeps
@@ -154,7 +156,7 @@ class hydro:
         # Liste d'objets responsables des termes sources / forces.
         self.forces = forces
         # Reference spatial step (assumed uniform here).
-        self.dx_o = 1.0
+        self.dx_o = dx
         self.use_mol = use_mol
         # Selects the time integration function by name.
         self.integrator = INTEGRATOR_DICT[integrator]  # callable
@@ -1035,5 +1037,8 @@ class hydro:
                     "boundary":self.boundary,
                    "splitting_schemes":self.splitting_schemes,
                     "fluxes":self.fluxes,"forces":self.forces,
-                "use_mol":self.use_mol,"use_ct":self.use_ct, "pmesh_shape":self.pmesh_shape}  # static values
+                "use_mol":self.use_mol,"use_ct":self.use_ct, "pmesh_shape":self.pmesh_shape,
+                # dx doit survivre au round-trip pytree, sinon self.dx_o revient a 1.0
+                # dans toute methode ou l'objet est passe en argument d'un jit.
+                "dx":self.dx_o}  # static values
         return (children, aux_data)
