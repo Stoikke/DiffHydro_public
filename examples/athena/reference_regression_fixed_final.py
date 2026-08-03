@@ -121,7 +121,7 @@ print("Backend:", jax.default_backend(), jax.devices())
 size_shape         = int(os.environ.get("N", 256))
 # --- free inputs of the new convention ------------------------------
 unit_length_phys   = float(os.environ.get("ULEN", 1))      # cm  <- 1 code length unit
-box_width_phys     = float(os.environ.get("BOXPHYS", 3.2))   # physical length units cm
+box_width_phys     = float(os.environ.get("BOXPHYS", 10))   # physical length units cm
 # box_width_code     = float(os.environ.get("BOXCODE", 3.2))   # code length units
 unit_velocity_phys = float(os.environ.get("UVEL", 3e10))     # cm/s <- 1 code velocity unit
 
@@ -380,6 +380,34 @@ out = os.path.join(BASE_OUTPUT_DIR, f"field_test_fixed_units_{run_tag}.png")
 plt.savefig(out, dpi=150, bbox_inches="tight")
 print("wrote", out)
 
+E_slice = E_cell[c, :, :]          # photons per cell
+extent  = compute_extent_phys(size_shape,centered=False)
+fig, ax = plt.subplots(figsize=(6, 5))
+pos = E_slice[E_slice > 0]
+im = ax.imshow(np.ma.masked_less_equal(E_slice, 0.0), origin="lower", cmap="hot",
+               extent=extent, norm=LogNorm(vmin=max(pos.min(), peak * 1e-12), vmax=peak))
+ax.set_xlabel("y [cm]"); ax.set_ylabel("x [cm]")
+ax.set_title(f"Photons/cell, t = {t_phys:.2e} s  (ct = {c_cgs*t_phys/dx_phys:.0f} cells)")
+fig.colorbar(im, ax=ax, label="photons per cell")
+plt.tight_layout()
+out = os.path.join(BASE_OUTPUT_DIR, f"field_test_fixed_units_{run_tag}_yz.png")
+plt.savefig(out, dpi=150, bbox_inches="tight")
+print("wrote", out)
+
+E_slice = E_cell[:, c, :]          # photons per cell
+extent  = compute_extent_phys(size_shape,centered=False)
+fig, ax = plt.subplots(figsize=(6, 5))
+pos = E_slice[E_slice > 0]
+im = ax.imshow(np.ma.masked_less_equal(E_slice, 0.0), origin="lower", cmap="hot",
+               extent=extent, norm=LogNorm(vmin=max(pos.min(), peak * 1e-12), vmax=peak))
+ax.set_xlabel("y [cm]"); ax.set_ylabel("x [cm]")
+ax.set_title(f"Photons/cell, t = {t_phys:.2e} s  (ct = {c_cgs*t_phys/dx_phys:.0f} cells)")
+fig.colorbar(im, ax=ax, label="photons per cell")
+plt.tight_layout()
+out = os.path.join(BASE_OUTPUT_DIR, f"field_test_fixed_units_{run_tag}_xz.png")
+plt.savefig(out, dpi=150, bbox_inches="tight")
+print("wrote", out)
+
 
 # raw solver field = density in code units, axes in cell indices
 fig, ax = plt.subplots(figsize=(6, 5))
@@ -394,6 +422,45 @@ out = os.path.join(BASE_OUTPUT_DIR, f"field_test_fixed_units_{run_tag}_brut.png"
 plt.savefig(out, dpi=150, bbox_inches="tight")
 print("wrote", out)
 
+
+# champ transposé (axes x/y inversés) — utile pour vérifier l'isotropie de la source
+fig, ax = plt.subplots(figsize=(6, 5))
+E_slice_code_T = E_slice_code.T
+pos_code_T = E_slice_code_T[E_slice_code_T > 0]
+im = ax.imshow(np.ma.masked_less_equal(E_slice_code_T, 0.0), origin="lower", cmap="hot")
+ax.set_xlabel("x cell"); ax.set_ylabel("y cell")
+ax.set_title(f"E_gamma code (transposed), t = {t_phys:.2e} s  "
+             f"(ct = {c_cgs*t_phys/dx_phys:.0f} cells)")
+fig.colorbar(im, ax=ax, label="photons per code volume")
+plt.tight_layout()
+out = os.path.join(BASE_OUTPUT_DIR, f"field_test_fixed_units_{run_tag}_brut_transposed.png")
+plt.savefig(out, dpi=150, bbox_inches="tight")
+print("wrote", out)
+
+fig, ax = plt.subplots(figsize=(6, 5))
+E_slice_code_T = E_slice_code.T
+im = ax.imshow(np.log10(np.ma.masked_less_equal(E_slice_code_T, 0.0)), origin="lower", cmap="hot")
+ax.set_xlabel("x cell"); ax.set_ylabel("y cell")
+ax.set_title(f"log10 E_gamma code (transposed), t = {t_phys:.2e} s  "
+             f"(ct = {c_cgs*t_phys/dx_phys:.0f} cells)")
+fig.colorbar(im, ax=ax, label="log10 photons per code volume")
+plt.tight_layout()
+out = os.path.join(BASE_OUTPUT_DIR, f"field_test_fixed_units_{run_tag}_brut_log_transposed.png")
+plt.savefig(out, dpi=150, bbox_inches="tight")
+print("wrote", out)
+
+fig, ax = plt.subplots(figsize=(6, 5))
+E_slice_code = E_cell[:, :, c]
+E_slice_code_T = E_slice_code.T
+im = ax.imshow(np.log10(np.ma.masked_less_equal(E_slice_code_T-E_slice_code, 0.0)), origin="lower", cmap="hot")
+ax.set_xlabel("x cell"); ax.set_ylabel("y cell")
+ax.set_title(f"log10 E_gamma code (transposed), t = {t_phys:.2e} s  "
+             f"(ct = {c_cgs*t_phys/dx_phys:.0f} cells)")
+fig.colorbar(im, ax=ax, label="log10 photons per code volume")
+plt.tight_layout()
+out = os.path.join(BASE_OUTPUT_DIR, f"field_test_fixed_units_{run_tag}_brut_log_transposed-normal.png")
+plt.savefig(out, dpi=150, bbox_inches="tight")
+print("wrote", out)
 
 fig, ax = plt.subplots(figsize=(6, 5))
 im = ax.imshow(np.log10(np.ma.masked_less_equal(E_slice_code, 0.0)), origin="lower", cmap="hot")
