@@ -5,11 +5,17 @@ Placeholder functions for future radiative transfer physics.
 All methods currently return stub values.
 """
 
+import os
+from turtle import up
+
+
 import jax
 import jax.numpy as jnp
 from ..utils.debug_checks import _check_finite,_check_all_float_variables
 from ..units import CodeUnits, UnitParser, from_code, to_code
 from diffhydro.equationmanager_radiative_transf_no_chat import EquationManager as EquationManager_RT
+from diffhydro.units.convert import temperature_code_from_Prho
+
 
 class RadiativeTransfer:
     """Placeholder for radiative transfer physics (not implemented)."""
@@ -89,6 +95,7 @@ class StellarRadiationForce:
         beam_momentum_scaling="legacy_c2_source2",
         cu=None,
         parser=None,
+        chemistry=False,
         
     ):
         self.escape_fraction = escape_fraction
@@ -100,6 +107,7 @@ class StellarRadiationForce:
         self.injection_geometry = injection_geometry
         self.injection_momentum = injection_momentum
         self.momentum_only = momentum_only
+        self.chemistry = chemistry
         self.debug = debug
         self.light_speed = eq.light_speed if eq is not None else 1.0
         self.mesh_shape = eq.mesh_shape if eq is not None else (100, 100, 100)
@@ -135,7 +143,18 @@ class StellarRadiationForce:
             raise ValueError("CodeUnits not configured.")
         unit = out_unit or self.parser.default_cgs_unit(dimension)
         return from_code(value, dimension, self.cu, unit, self.parser)
-
+    
+    def get_temp_code(self, T_phys):
+        """Convert a physical temperature (float in Kelvin, or a unit string
+        like '5000 K') into code units. Does NOT read from environment."""
+        if isinstance(T_phys, str):
+            temp_q = self.parser.parse(T_phys, expected_dim="temperature")
+            T_phys_K = temp_q.cgs_value
+        else:
+            T_phys_K = float(T_phys)  # assumed already in Kelvin (cgs)
+        T_code = T_phys_K / self.cu.Temp_cgs
+        return T_code    
+    
     def get_stellar_emission(self, star_age, star_metallicity):
         if self.stellar_spectrum_func is not None:
             return self.stellar_spectrum_func(star_age, star_metallicity)
@@ -280,255 +299,6 @@ class StellarRadiationForce:
         ratio_slice=jnp.where(mask_ratio[0:20, 40:60, 50], ratio[0:20, 40:60, 50], 0.0),
         ordered=True,
     )
-    # def force(self, i, sol, params, dt):
-    #     if self.one_injection:
-    #         inject_now = jnp.equal(i, 0)
-    #     else:
-    #         inject_now = True
-
-    #     amp = self.stromgren_rate * dt
-
-    #     ix = self.mesh_shape[0] // 2
-    #     iy = self.mesh_shape[1] // 2
-    #     iz = self.mesh_shape[2] // 2
-
-    #     e_inj = jnp.where(inject_now, amp, 0.0)
-    #     fx_inj = jnp.where(inject_now, amp * self.light_speed**(-2), 0.0)
-
-    #     if not self.momentum_only:
-    #         sol = sol.at[0, ix, iy, iz].add(e_inj)
-
-    #     if self.injection_momentum:
-    #         sol = sol.at[1, ix, iy, iz].add(fx_inj)
-
-    #     jax.debug.print("i = {}", i)
-    #     jax.debug.print("E injected at center = {}", sol[0, ix, iy, iz])
-    #     jax.debug.print("Fx injected at center = {}", sol[1, ix, iy, iz])
-
-    #     params_out = dict(params)
-    #     if "star_ages" in params and params["star_ages"] is not None:
-    #         params_out["star_ages"] = jnp.asarray(params["star_ages"]) + dt
-
-    #     return sol, params_out
-    # def force(self, i, sol, params, dt):
-    #     if "star_masses" not in params or params["star_masses"] is None:
-    #         return sol, params
-
-    #     star_masses        = jnp.asarray(params["star_masses"])
-    #     star_ages_old      = jnp.asarray(params["star_ages"])
-    #     star_ages_new      = star_ages_old + dt
-    #     star_metallicities = jnp.asarray(params["star_metallicities"])
-
-    #     if self.injection_mode == "stromgren":
-    #         per_star_source = self.get_N_gamma_stromgen_sphere() * dt
-    #     elif self.injection_mode == "physical":
-    #         per_star_source = self.get_N_gamma(
-    #             star_masses, star_ages_old, star_ages_new, star_metallicities, sol
-    #         ) * dt
-    #     else:
-    #         raise ValueError(f"Unknown injection_mode: {self.injection_mode}")
-
-    #     if self.one_injection:
-    #         inject_now      = jnp.equal(i, 0)
-    #         per_star_source = jnp.where(inject_now, per_star_source, 0.0)
-
-    #     # ── Photon injection (disabled if momentum_only=True) ──────────
-    #     if self.momentum_only == False:
-    #         if "star_positions" not in params or params["star_positions"] is None:
-    #             sol = sol.at[0,
-    #                          self.mesh_shape[0] // 2,
-    #                          self.mesh_shape[1] // 2,
-    #                          self.mesh_shape[2] // 2].add(jnp.sum(per_star_source))
-    #         else:
-    #             star_positions = jnp.asarray(params["star_positions"], dtype=jnp.int32)
-    #             if jnp.ndim(per_star_source) == 0:
-    #                 per_star_source = jnp.full((star_positions.shape[0],), per_star_source)
-
-    #             ix = star_positions[:, 0]
-    #             iy = star_positions[:, 1]
-    #             iz = star_positions[:, 2]
-
-    #             if not self.gaussian_star:
-    #                 sol = sol.at[0, ix, iy, iz].add(per_star_source)
-    #             else:
-    #                 sigma = max(1,round(self.mesh_shape[0] // 100))  # add rounds for cases like 199 or 150 
-    #                 # offsets = jnp.arange(
-    #                 #     -round(5 * self.mesh_shape[0] // 100),
-    #                 #      round(5 * self.mesh_shape[0] // 100) + 1
-    #                 # )
-    #                 offsets = jnp.arange(-3 * sigma, 3 * sigma + 1)
-
-
-    #                 if self.injection_geometry == "2D":
-    #                     di2, dj2 = jnp.meshgrid(offsets, offsets, indexing="ij")
-    #                     weights2 = jnp.exp(-(di2**2 + dj2**2) / (2 * sigma**2))
-    #                     weights2 = weights2 / weights2.sum()
-    #                     for s in range(star_positions.shape[0]):
-    #                         sol = sol.at[0, ix[s], iy[s] + di2, iz[s] + dj2].add(per_star_source[s] * weights2)
-    #                         # sol = sol.at[1, ix[s], iy[s] + di2, iz[s] + dj2].add(per_star_source[s] * weights2 *self.light_speed**(-2))
-    #                         # sol = sol.at[2:3, ix[s], iy[s] + di2, iz[s] + dj2].add(0)
-    #                 elif self.injection_geometry == "3D":
-    #                     di3, dj3, dk3 = jnp.meshgrid(offsets, offsets, offsets, indexing="ij")
-    #                     weights3 = jnp.exp(-(di3**2 + dj3**2 + dk3**2) / (2 * sigma**2))
-    #                     weights3 = weights3 / weights3.sum()
-    #                     for s in range(star_positions.shape[0]):
-    #                         sol = sol.at[0, ix[s] + di3, iy[s] + dj3, iz[s] + dk3].add(
-    #                             per_star_source[s] * weights3)
-                            
-    #                 # ── Injection de momentum ─────────────────────────────────────────────
-    #                 # ── Momentum injection oriented +x ────────────────────────────────
-    #                 # if self.injection_momentum:
-    #                 #     for s in range(star_positions.shape[0]):
-    #                 #         if self.injection_geometry == "2D":
-    #                 #             di2, dj2 = jnp.meshgrid(offsets, offsets, indexing="ij")
-
-    #                 #             weights2 = jnp.exp(-(di2**2 + dj2**2) / (2 * sigma**2))
-    #                 #             mask_x = (di2 >= 0).astype(weights2.dtype)
-    #                 #             weights_dir = weights2 * mask_x
-    #                 #             weights_dir = weights_dir / (weights_dir.sum() + 1e-30)
-
-    #                 #             sol = sol.at[1, ix[s], iy[s] + di2, iz[s] + dj2].add(
-    #                 #             per_star_source[s] * weights_dir * self.light_speed**(-2))
-
-    #                 # elif self.injection_geometry == "3D":
-    #                 #     di3, dj3, dk3 = jnp.meshgrid(offsets, offsets, offsets, indexing="ij")
-
-    #                 #     weights3 = jnp.exp(-(di3**2 + dj3**2 + dk3**2) / (2 * sigma**2))
-    #                 #     mask_x = (di3 >= 0).astype(weights3.dtype)
-    #                 #     weights_dir = weights3 * mask_x
-    #                 #     weights_dir = weights_dir / (weights_dir.sum() + 1e-30)
-
-    #                 #     sol = sol.at[1, ix[s] + di3, iy[s] + dj3, iz[s] + dk3].add(
-    #                 #     per_star_source[s] * weights_dir * self.light_speed**(-2))
-
-
-    #                 if self.injection_momentum:
-    #                     for s in range(star_positions.shape[0]):
-    #                         if self.injection_geometry == "2D":
-    #                             di2, dj2 = jnp.meshgrid(offsets, offsets, indexing="ij")
-    #                             weights2 = jnp.exp(-(di2**2 + dj2**2) / (2 * sigma**2))
-    #                             weights2 = weights2 / (weights2.sum() + 1e-30)
-    #                             sol = sol.at[1, ix[s], iy[s] + di2, iz[s] + dj2].add(per_star_source[s] * weights2 * self.light_speed**(-1))
-    #                             sol = sol.at[2, ix[s], iy[s] + di2, iz[s] + dj2].add(0.0)
-    #                             sol = sol.at[3, ix[s], iy[s] + di2, iz[s] + dj2].add(0.0)
-    #                         elif self.injection_geometry == "3D":
-    #                             di3, dj3, dk3 = jnp.meshgrid(offsets, offsets, offsets, indexing="ij")
-    #                             weights3 = jnp.exp(-(di3**2 + dj3**2 + dk3**2) / (2 * sigma**2))
-    #                             mask_x = (di3 >= 0).astype(weights3.dtype)
-    #                             weights_dir = weights3 * mask_x
-    #                             weights_dir = weights_dir / (weights_dir.sum() + 1e-30)
-    #                             sol = sol.at[1, ix[s] + di3, iy[s] + dj3, iz[s] + dk3].add(per_star_source[s] * weights_dir * self.light_speed**(-2))
-
-    #                     #old version non functionnal
-    #                     # xi           = jnp.arange(43, 57)
-    #                     # total_source = jnp.sum(per_star_source)
-    #                     # sol          = sol.at[1:3, xi, 0, xi].add(
-    #                     #     total_source / len(xi)  
-                    
-    #                     #     )#self.light_speed**2 *
-    #     # ── Debug ─────────────────────────────────────────────────────────────
-    #     if self.debug:
-    #         z_idx        = self.mesh_shape[2] // 2
-    #         z_slice      = sol[0, :, :, z_idx]
-    #         nonzero_count = jnp.count_nonzero(z_slice)
-    #         coords_xy    = jnp.argwhere(z_slice != 0, size=z_slice.size, fill_value=-1)
-    #         x_idx        = coords_xy[:, 0]
-    #         y_idx        = coords_xy[:, 1]
-    #         valid        = x_idx >= 0
-    #         vals         = jnp.where(valid, z_slice[x_idx, y_idx], 0.0)
-
-    #         log_threshold   = -17
-    #         log_abs_vals    = jnp.where(valid, jnp.log(vals + 1e-300), jnp.inf)
-    #         below_log_mask  = valid & (log_abs_vals < log_threshold)
-    #         n_below_log     = jnp.count_nonzero(below_log_mask)
-    #         x_below_min     = jnp.min(jnp.where(below_log_mask, x_idx, 1000))
-    #         x_below_max     = jnp.max(jnp.where(below_log_mask, x_idx, -1))
-    #         y_below_min     = jnp.min(jnp.where(below_log_mask, y_idx, 1000))
-    #         y_below_max     = jnp.max(jnp.where(below_log_mask, y_idx, -1))
-    #         x_below_size    = jnp.maximum(x_below_max - x_below_min + 1, 0)
-    #         y_below_size    = jnp.maximum(y_below_max - y_below_min + 1, 0)
-
-    #         x_min  = jnp.min(jnp.where(valid, x_idx, 1000))
-    #         x_max  = jnp.max(jnp.where(valid, x_idx, -1))
-    #         y_min  = jnp.min(jnp.where(valid, y_idx, 1000))
-    #         y_max  = jnp.max(jnp.where(valid, y_idx, -1))
-    #         x_size = jnp.maximum(x_max - x_min + 1, 0)
-    #         y_size = jnp.maximum(y_max - y_min + 1, 0)
-
-    #         slice_coord = self.mesh_shape[0] // 2
-    #         line_x = sol[0, :, slice_coord, z_idx]
-    #         line_y = sol[0, slice_coord, :, z_idx]
-    #         line_z = sol[0, slice_coord, slice_coord, :]
-
-    #         jax.debug.print("Line x at y=50, z=50: {line}", line=line_x)
-    #         jax.debug.print("Line y at x=50, z=50: {line}", line=line_y)
-    #         jax.debug.print("Line z at x=50, y=50: {line}", line=line_z)
-
-    #         log_threshold = -11
-    #         log_x = jnp.argwhere(jnp.log10(line_x + 1e-300) < log_threshold, size=line_x.size, fill_value=-1)[:, 0]
-    #         log_y = jnp.argwhere(jnp.log10(line_y + 1e-300) < log_threshold, size=line_y.size, fill_value=-1)[:, 0]
-    #         log_z = jnp.argwhere(jnp.log10(line_z + 1e-300) < log_threshold, size=line_z.size, fill_value=-1)[:, 0]
-
-    #         non_zero_x = jnp.argwhere(line_x != 0, size=line_x.size, fill_value=-1)[:, 0]
-    #         non_zero_y = jnp.argwhere(line_y != 0, size=line_y.size, fill_value=-1)[:, 0]
-    #         non_zero_z = jnp.argwhere(line_z != 0, size=line_z.size, fill_value=-1)[:, 0]
-
-    #         jax.debug.print("Non-zero x for y=50, z=50: {x}", x=non_zero_x)
-    #         jax.debug.print("Non-zero y for x=50, z=50: {y}", y=non_zero_y)
-    #         jax.debug.print("Non-zero z for x=50, y=50: {z}", z=non_zero_z)
-    #         jax.debug.print("Log x for y=50, z=50: {x}", x=log_x)
-    #         jax.debug.print("Log y for x=50, z=50: {y}", y=log_y)
-    #         jax.debug.print("Log z for x=50, y=50: {z}", z=log_z)
-    #         jax.debug.print("\n=== Timestep {} === Non-zero on [0,:,:,{}] ===", i, z_idx)
-    #         jax.debug.print("Non-zero count: {}", nonzero_count)
-    #         jax.debug.print("X range: [{}, {}] (size: {})", x_min.astype(jnp.int32), x_max.astype(jnp.int32), x_size.astype(jnp.int32))
-    #         jax.debug.print("Y range: [{}, {}] (size: {})", y_min.astype(jnp.int32), y_max.astype(jnp.int32), y_size.astype(jnp.int32))
-    #         jax.debug.print("Count log(|value|) < threshold: {}", n_below_log)
-    #         jax.debug.print("X where log < threshold: [{}, {}] (size: {})", x_below_min.astype(jnp.int32), x_below_max.astype(jnp.int32), x_below_size.astype(jnp.int32))
-    #         jax.debug.print("Y where log < threshold: [{}, {}] (size: {})", y_below_min.astype(jnp.int32), y_below_max.astype(jnp.int32), y_below_size.astype(jnp.int32))
-    #         xmid = self.mesh_shape[0] // 2
-    #         ymid = self.mesh_shape[1] // 2
-    #         zmid = self.mesh_shape[2] // 2
-    #         Fx_line = sol[1, :, ymid, zmid]
-    #         jax.debug.print("Fx line: {}", Fx_line)
-    #         jax.debug.print("sum Fx(x>x0) = {}", jnp.sum(Fx_line[xmid+1:]))
-    #         jax.debug.print("sum Fx(x<x0) = {}", jnp.sum(Fx_line[:xmid]))
-    #         x0 = 0
-    #         Fx_line = sol[1, :, ymid, zmid]
-    #         jax.debug.print("Fx line at y=50,z=50: {}", Fx_line)
-    #         jax.debug.print("Fx at injection point x=0: {}", Fx_line[x0])
-    #         jax.debug.print("sum Fx for x>0: {}", jnp.sum(Fx_line[x0+1:]))
-
-    #         jax.debug.print("E_gamma min = {}", jnp.min(sol[0]))
-    #         jax.debug.print("E_gamma max = {}", jnp.max(sol[0]))
-    #         jax.debug.print("|F| max = {}", jnp.max(jnp.sqrt(sol[1]**2 + sol[2]**2 + sol[3]**2)))
-    #         jax.debug.print("f_max = {}", jnp.max(
-    #             jnp.sqrt(sol[1]**2 + sol[2]**2 + sol[3]**2) /
-    #             jnp.where(sol[0] > 0, sol[0] * self.light_speed, 1e-30)))
-    #         Fy = sol[1] 
-    #         Fx = sol[2]  # or the index corresponding to Fx in your convention
-    #         Fz = sol[3]  # idem
-    #         jax.debug.print("sum Fy =", jnp.sum(Fy))
-    #         jax.debug.print("sum |Fx| =", jnp.sum(jnp.abs(Fx)))
-    #         jax.debug.print("sum |Fz| =", jnp.sum(jnp.abs(Fz)))
-    #         Fy_tot = jnp.sum(sol[1])
-    #         Fx_tot = jnp.sum(sol[2])
-    #         Fz_tot = jnp.sum(sol[3])
-
-    #         jax.debug.print("Fy max:", jnp.max(jnp.abs(Fy)))
-    #         jax.debug.print("Fx max:", jnp.max(jnp.abs(Fx)))
-    #         jax.debug.print("Fz max:", jnp.max(jnp.abs(Fz)))
-    #         jax.debug.print("Fy/Fx:", jnp.max(jnp.abs(Fy)) / (jnp.max(jnp.abs(Fx)) + 1e-30))
-    #         jax.debug.print("Fy/Fz:", jnp.max(jnp.abs(Fy)) / (jnp.max(jnp.abs(Fz)) + 1e-30))
-    #         angle_y = jnp.arctan2(jnp.sqrt(Fx_tot**2 + Fz_tot**2), Fy_tot)
-    #         jax.debug.print("angle vs y =", angle_y)
-    #     # check sol after injection
-    #     _check_finite("sol after injection", sol)
-
-    #     params_out               = dict(params)
-    #     params_out["star_ages"]  = star_ages_new
-    #     return sol, params_out
-        # ─────────────── Helpers d'indices / poids ───────────────
 
     def _clip_indices_2d(self, x0, y0, z0, di2, dj2):
         xi = x0 + di2
@@ -587,7 +357,7 @@ class StellarRadiationForce:
             (yi >= 0) & (yi < self.mesh_shape[1]) &
             (zi >= 0) & (zi < self.mesh_shape[2])
         )
-        s_float = s.astype(jnp.float32)
+        s_float = s.astype(jnp.float64)
         weights = jnp.exp(- (s_float**2) / (2.0 * float(sigma)**2))
         weights = jnp.where(valid, weights, 0.0)
         weights = weights / (jnp.sum(weights) + 1e-30)
@@ -623,7 +393,7 @@ class StellarRadiationForce:
             (yi >= 0) & (yi < self.mesh_shape[1]) &
             (zi >= 0) & (zi < self.mesh_shape[2])
         )
-        s_float = s.astype(jnp.float32)
+        s_float = s.astype(jnp.float64)
         weights = jnp.exp(- (s_float**2) / (2.0 * float(sigma)**2))
         weights = jnp.where(valid, weights, 0.0)
         weights = weights / (jnp.sum(weights) + 1e-30)
@@ -670,6 +440,66 @@ class StellarRadiationForce:
         sol = sol.at[3, xi, yi, zi].add(jnp.zeros_like(fx_inj))
         return sol
 
+    def _inject_momentum_radial_2d(self, sol, x0, y0, z0, source, offsets, sigma):
+        """Radial (isotropic point-source) momentum injection in the (x, z=z0) plane.
+        Unlike a beam, F points outward from the source at each offset cell,
+        matching an isotropically emitting star rather than a collimated jet."""
+        di2, dj2 = jnp.meshgrid(offsets, offsets, indexing="ij")
+        xi, yi, zi, valid = self._clip_indices_2d(x0, y0, z0, di2, dj2)
+        _, _, weights2 = self._normalized_weights_2d(offsets, sigma, valid)
+
+        r = jnp.sqrt(di2**2 + dj2**2)
+        inv_r = jnp.where(r > 0, 1.0 / r, 0.0)   # avoid 0/0 at the source cell
+        ux = di2 * inv_r
+        uy = dj2 * inv_r
+
+        f_mag = self._beam_momentum_factor(source, weights2)
+        fx_inj = f_mag * ux
+        fy_inj = f_mag * uy
+
+        sol = sol.at[1, xi, yi, zi].add(fx_inj)
+        sol = sol.at[2, xi, yi, zi].add(fy_inj)
+        sol = sol.at[3, xi, yi, zi].add(jnp.zeros_like(fx_inj))
+
+        if self.debug:
+            E = sol[0, xi, yi, zi]
+            jax.debug.print("Injecting radial momentum 2D at x0={}, y0={}, z0={}", x0, y0, z0)
+            jax.debug.print("Momentum source: {}, weights sum: {}", source, jnp.sum(weights2))
+            jax.debug.print("|F| test c^2: {}", f_mag / (source**2 + 1e-30) / weights2)
+            jax.debug.print("max E = {}", jnp.max(E))
+            jax.debug.print("any nan E = {}", jnp.any(jnp.isnan(E)))
+            jax.debug.print("any inf E = {}", jnp.any(jnp.isinf(E)))
+
+        return weights2, sol
+
+
+    def _inject_momentum_radial_3d(self, sol, x0, y0, z0, source, offsets, sigma):
+        """Radial (isotropic point-source) momentum injection in full 3D."""
+        di3, dj3, dk3 = jnp.meshgrid(offsets, offsets, offsets, indexing="ij")
+        xi, yi, zi, valid = self._clip_indices_3d(x0, y0, z0, di3, dj3, dk3)
+        _, _, _, weights3 = self._normalized_weights_3d(offsets, sigma, valid)
+
+        r = jnp.sqrt(di3**2 + dj3**2 + dk3**2)
+        inv_r = jnp.where(r > 0, 1.0 / r, 0.0)
+        ux = di3 * inv_r
+        uy = dj3 * inv_r
+        uz = dk3 * inv_r
+
+        f_mag = self._beam_momentum_factor(source, weights3)
+        fx_inj = f_mag * ux
+        fy_inj = f_mag * uy
+        fz_inj = f_mag * uz
+
+        sol = sol.at[1, xi, yi, zi].add(fx_inj)
+        sol = sol.at[2, xi, yi, zi].add(fy_inj)
+        sol = sol.at[3, xi, yi, zi].add(fz_inj)
+
+        if self.debug:
+            jax.debug.print("Injecting radial momentum 3D at x0={}, y0={}, z0={}", x0, y0, z0)
+            jax.debug.print("Momentum source: {}, weights sum: {}", source, jnp.sum(weights3))
+            jax.debug.print("|F| max: {}", jnp.max(jnp.sqrt(fx_inj**2 + fy_inj**2 + fz_inj**2)))
+
+        return weights3, sol
     def _clip_to_m1_cone(self, sol):
         c = self.light_speed
         E  = sol[0]
@@ -752,7 +582,10 @@ class StellarRadiationForce:
         # beam_sign
 
         if self.injection_mode == "stromgren":
-            per_star_source = self.get_N_gamma_stromgen_sphere() * dt
+            per_star_source = (self.get_N_gamma_stromgen_sphere()* dt + self.get_N_chemistry(
+              rho_gas=sol[4], sigma_HI=self.sigma_HI, caseA=self.caseA, caseB=self.caseB, 
+              fraction_HI=sol[8], T=self.temperature
+                ) )
             if self.debug:
                 self._debug_stromgren_units_jax(dt, per_star_source)
         elif self.injection_mode == "physical":
@@ -832,25 +665,33 @@ class StellarRadiationForce:
             else:
                 for s in range(star_positions.shape[0]):
                     x0, y0, z0 = ix[s], iy[s], iz[s]
-                    if self.injection_geometry == "2D":
-                        wdbg, sol = self._inject_momentum_x_2d(sol, x0, y0, z0, per_star_source[s], offsets, sigma)
-                        if self.debug:
-                            bad_E = jnp.any(~jnp.isfinite(sol[0]))
-                            bad_F = jnp.any(~jnp.isfinite(sol[1:]))
-                            jax.debug.print(
-                                "NaN/Inf after injection? Egamma={E_bad}, Fgamma={F_bad}",
-                                E_bad=bad_E, F_bad=bad_F,
-                            )
-                            jax.debug.print("sum weight = 1? {}", wdbg.sum())
-                    elif self.injection_geometry == "3D":
-                        sol = self._inject_momentum_x_3d(sol, x0, y0, z0, per_star_source[s], offsets, sigma)
-                    elif self.injection_geometry == "beam_x":
-                        wdbg, sol = self._inject_momentum_beam_x(sol, x0, y0, z0, per_star_source[s], sigma, beam_len)
-                        if self.debug:
-                            self.debug_grid_stats(sol, self.eq, "after clip sol momentum injection beam", 0)
+                    if self.chemistry == False: 
+                        if self.injection_geometry == "2D":
+                            wdbg, sol = self._inject_momentum_x_2d(sol, x0, y0, z0, per_star_source[s], offsets, sigma)
+                            if self.debug:
+                                bad_E = jnp.any(~jnp.isfinite(sol[0]))
+                                bad_F = jnp.any(~jnp.isfinite(sol[1:]))
+                                jax.debug.print(
+                                    "NaN/Inf after injection? Egamma={E_bad}, Fgamma={F_bad}",
+                                    E_bad=bad_E, F_bad=bad_F,
+                                )
+                                jax.debug.print("sum weight = 1? {}", wdbg.sum())
+                        elif self.injection_geometry == "3D":
+                            sol = self._inject_momentum_x_3d(sol, x0, y0, z0, per_star_source[s], offsets, sigma)
+                        elif self.injection_geometry == "beam_x":
+                            wdbg, sol = self._inject_momentum_beam_x(sol, x0, y0, z0, per_star_source[s], sigma, beam_len)
+                            if self.debug:
+                                self.debug_grid_stats(sol, self.eq, "after clip sol momentum injection beam", 0)
+                        else:
+                            raise ValueError(f"Unknown injection_geometry: {self.injection_geometry}")
+                        
                     else:
-                        raise ValueError(f"Unknown injection_geometry: {self.injection_geometry}")
-
+                        if self.injection_geometry == "2D":
+                            wdbg, sol = self._inject_momentum_radial_2d(sol, x0, y0, z0, per_star_source[s], offsets, sigma)
+                        elif self.injection_geometry == "3D":
+                            wdbg, sol = self._inject_momentum_radial_3d(sol, x0, y0, z0, per_star_source[s], offsets, sigma)
+                        elif self.injection_geometry == "beam_x":
+                            wdbg, sol = self._inject_momentum_beam_x(sol, x0, y0, z0, per_star_source[s], sigma, beam_len)
         # Safety limiter
         sol = self._clip_to_m1_cone(sol)
 
@@ -877,5 +718,63 @@ class StellarRadiationForce:
         # ndim = nombre d'axes spatiaux (len(mesh_shape), comme sol.ndim - 1).
         cell_volume = self.dx ** len(self.mesh_shape)
         return self.stromgren_rate / cell_volume
+
+    def get_temp_code(self, cu, sol):
+        rho_code = sol[4]
+        p_code   = sol[9]
+        T_code_field = temperature_code_from_Prho(p_code, rho_code, cu)
+        return T_code_field
     
+    def molar_mass_to_code(M_g_per_mol: float, cu) -> float:
+        """Convert a molar mass (g/mol) to code units (code-mass/mol).
+        N_avogadro is NOT rescaled: mol is a pure count, not a length/mass/time
+        dimension, so cu.N_avogadro_cgs stays valid unchanged in code units."""
+        return M_g_per_mol / cu.M_cgs
     
+    def rate_coeff_to_code(value_cgs: float, cu) -> float:
+        """Convert a cm^3 s^-1 rate coefficient (e.g. recombination rate alpha_B)
+        to code units, using only L_cgs and T_cgs from CodeUnits."""
+        unit_scale = cu.L_cgs**3 / cu.T_cgs
+        return value_cgs / unit_scale
+    
+    def caseA(self, T):
+        T = 1
+        return self.rate_coeff_to_code(4.2e-13, self.cu) * T #conversion to code units needed
+    
+    def caseB(self, T):
+        return self.rate_coeff_to_code(2.6e-13, self.cu) * (T / 1e4) ** -0.7 #conversion to code units needed
+
+    def get_number_density_gas(self, rho_gas, N_avogadro=6.022e23,M_molaire=2.3e-26): #conversion to code units needed
+        return rho_gas  / (self.molar_mass_to_code(M_molaire, self.cu) * N_avogadro) # waiting for Enrico check
+    
+    def get_sigma_HI(self, T):
+        return  #conversion to code units needed
+    
+    def get_N_chemistry(self, rho_gas ,sigma_HI, caseA, caseB, fraction_HI, T ):
+        Nstar_plus_Nrec = - self.get_N_gamma_stromgen_sphere() * self.get_number_density_gas(rho_gas) * sigma_HI * self.light_speed * (1-fraction_HI) 
+        + ((caseA(self,T) - caseB(self,T)) * self.get_number_density_gas(rho_gas)**2 * fraction_HI*(1-fraction_HI) )
+        return Nstar_plus_Nrec
+
+    def get_flux_source_decay(self, rho_gas, sigma_HI, fraction_HI, dt):
+        """
+        Implicit (exact) decay factor for the radiative flux absorption sink,
+        symmetric to the energy sink term but with the extra factor of c:
+            dF/dt = -c * n_HI * sigma_HI * F
+        Solved analytically over dt to remain stable for stiff opacities
+        (avoids explicit update F += -c*kappa*F*dt blowing up when
+        c*kappa*dt >> 1).
+        """
+        n = self.get_number_density_gas(rho_gas)
+        n_HI = n * fraction_HI
+        kappa = n_HI * sigma_HI                     # code units: 1 / length
+        decay = jnp.exp(-kappa * self.light_speed * dt)
+        return decay
+
+
+    def apply_flux_chemistry_sink(self, sol, rho_gas, sigma_HI, fraction_HI, dt):
+        """Apply the M1 flux absorption sink to Fx, Fy, Fz (sol[1:4])."""
+        decay = self.get_flux_source_decay(rho_gas, sigma_HI, fraction_HI, dt)
+        sol = sol.at[1].multiply(decay)
+        sol = sol.at[2].multiply(decay)
+        sol = sol.at[3].multiply(decay)
+        return sol
