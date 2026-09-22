@@ -31,7 +31,7 @@ print("Backend:", jax.default_backend())
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-N = int(os.environ.get("N", 50))
+N = int(os.environ.get("N", 51))
 n_H_cgs = 1.0e-3
 T_K = 1.0e4
 Q_phot = 5.0e48
@@ -115,7 +115,7 @@ stellar = StellarRadiationForce(
     dx=dx_code,
     injection_mode="stromgren",
     stromgren_rate=Q_phot * cu.T_cgs,
-    injection_momentum=True,
+    injection_momentum=False,
     injection_geometry="radial_3D",
     gaussian_star=True,
     beam_momentum_scaling="legacy_c2_source2",
