@@ -47,7 +47,7 @@ sys.path.insert(0, REPO_ROOT)
 os.environ.setdefault("CUDA_DEVICE_ORDER", "PCI_BUS_ID")
 # Make sure all 4 local GPUs are visible to this single process (can also be
 # set from the sbatch script; kept here too so the script is self-contained).
-os.environ.setdefault("CUDA_VISIBLE_DEVICES", "0,1,2,3")
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "0")
 
 import jax
 # NOTE: no jax.distributed.initialize() -- single node, single process,
@@ -98,7 +98,7 @@ except OSError as e:
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-N = int(os.environ.get("N", 100))
+N = int(os.environ.get("N", 50))
 n_H_cgs = 1.0e-3
 T_K = 1.0e4
 Q_phot = 5.0e48
@@ -109,8 +109,8 @@ CFL = 0.4
 NSTEP = int(os.environ.get("NSTEP", 5000))
 MAKE_GIFS = os.environ.get("MAKE_GIFS", "0") == "1"
 GIF_FRAMES = int(os.environ.get("GIF_FRAMES", 25))
-LIMITER = "MINMOD"
-FMAX = 0.75
+LIMITER = "VANLEER"
+FMAX = 1
 
 alpha_B = float(hchem.alpha_B_HII_cgs(T_K))
 R_S = (3.0 * Q_phot / (4.0 * np.pi * alpha_B * n_H_cgs**2)) ** (1.0 / 3.0)
@@ -182,7 +182,7 @@ stellar = StellarRadiationForce(
     dx=dx_code,
     injection_mode="stromgren",
     stromgren_rate=Q_phot * cu.T_cgs,
-    injection_momentum=True,
+    injection_momentum=False,
     injection_geometry="radial_3D",
     gaussian_star=True,
     beam_momentum_scaling="legacy_c2_source2",
@@ -207,19 +207,39 @@ sim = dh.hydro(
     forces=[stellar, chem_force],
     dx=dx_code,
     max_dt=dt_code,
-    pmesh_shape=(2, 2, 1),
+    #pmesh_shape=(2, 2, 1),
 )
 
 # ---------------------------------------------------------------------------
 # Initial state
 # ---------------------------------------------------------------------------
+# rho_code = n_H_cgs * hchem.MH_CGS / cu.rho_cgs
+# p_code = n_H_cgs * hchem.KB_CGS * T_K / cu.P_cgs
+# sol = jnp.zeros((10, N, N, N), dtype=jnp.float64)
+# sol = sol.at[4].set(rho_code)
+# sol = sol.at[8].set(p_code / (GAMMA - 1.0))
+# center = N // 2
+# sol = sol.at[9].set(0.0)
+
 rho_code = n_H_cgs * hchem.MH_CGS / cu.rho_cgs
 p_code = n_H_cgs * hchem.KB_CGS * T_K / cu.P_cgs
-sol = jnp.zeros((10, N, N, N), dtype=jnp.float64)
-sol = sol.at[4].set(rho_code)
-sol = sol.at[8].set(p_code / (GAMMA - 1.0))
+
+# Hydro primitives locales : [rho, vx, vy, vz, p, x_HII].
+hydro_prim0 = jnp.zeros((eq_hydro.n_cons, N, N, N), dtype=jnp.float64)
+hydro_prim0 = hydro_prim0.at[eq_hydro.mass_ids].set(rho_code)
+hydro_prim0 = hydro_prim0.at[eq_hydro.energy_ids].set(p_code)
+hydro_prim0 = hydro_prim0.at[eq_hydro.passive_slice].set(0.0)
+
+# Conversion officielle : p -> E_tot et x_HII -> rho*x_HII.
+hydro_cons0 = eq_hydro.get_conservatives_from_primitives(hydro_prim0)
+
+# Bloc RT : [E_gamma, Fx, Fy, Fz].
+rt_cons0 = jnp.zeros((eq_rt.n_cons, N, N, N), dtype=jnp.float64)
+
+# État global : RT puis hydro.
+sol = jnp.concatenate([rt_cons0, hydro_cons0], axis=0)
+
 center = N // 2
-sol = sol.at[9].set(0.0)
 
 params = {
     "star_masses": jnp.array([1.0]),
@@ -234,8 +254,17 @@ params = {
 n_snap = 12
 snap_every = max(1, n_steps_est // n_snap)
 
+# def xHII_from_conservative(state):
+#     return np.asarray(chem_force.view.xHII(state), dtype=np.float64)
+IDX_RHO = 4
+IDX_ETOT = 8
+IDX_RHO_XHII = 9
+
 def xHII_from_conservative(state):
-    return np.asarray(chem_force.view.xHII(state), dtype=np.float64)
+    rho = jnp.maximum(state[IDX_RHO], 1e-30)
+    rho_xHII = state[IDX_RHO_XHII]
+    x_HII = jnp.clip(rho_xHII / rho, 0.0, 1.0)
+    return np.asarray(x_HII, dtype=np.float64)
 
 def ionized_radius(x3d):
     V = float(np.sum(np.asarray(x3d, dtype=np.float64))) * dx_cgs**3
@@ -248,6 +277,29 @@ def run_chunk(state, pars, step0):
         return sim._hydrostep(step0 + j, (s, p), dt_code)
     return jax.lax.fori_loop(0, snap_every, body, (state, pars))
 
+def photon_count_in_rt_field(state):
+    E_gamma = np.asarray(state[0], dtype=np.float64)
+    return float(np.sum(E_gamma) * dx_code**3)
+
+
+def ionized_atom_count(x_HII):
+    return float(
+        n_H_cgs
+        * np.sum(np.asarray(x_HII, dtype=np.float64))
+        * dx_cgs**3
+    )
+
+
+def recombination_rate_case_b(x_HII):
+    x = np.asarray(x_HII, dtype=np.float64)
+    n_HII = n_H_cgs * x
+    n_e = n_HII  # hydrogène pur
+    return float(
+        alpha_B
+        * np.sum(n_e * n_HII)
+        * dx_cgs**3
+    )
+N_rec_cumulative = 0.0
 times = [0.0]
 radii = [0.0]
 snap_states = [np.asarray(sol)]
@@ -264,13 +316,59 @@ for chunk in range(n_chunks):
         sol, params = run_chunk(sol, params, chunk * snap_every)
     t_code += steps_this * dt_code
     x3d = xHII_from_conservative(sol)
+    dt_phys = steps_this * dt_code * cu.T_cgs
+
+    N_gamma = photon_count_in_rt_field(sol)
+    N_HII = ionized_atom_count(x3d)
+    R_rec = recombination_rate_case_b(x3d)
+    N_rec_cumulative += R_rec * dt_phys
     t_s = t_code * cu.T_cgs
+    N_emitted = Q_phot * t_s
+
+    budget = (
+        N_HII + N_gamma + N_rec_cumulative
+    ) / max(N_emitted, 1e-300)
+
+    print(
+        f" budget: emit={N_emitted:.4e} "
+        f"HII={N_HII:.4e} "
+        f"gamma={N_gamma:.4e} "
+        f"recomb={N_rec_cumulative:.4e} "
+        f"closure={budget:.5f}"
+    )
+    
     times.append(t_s)
     radii.append(ionized_radius(x3d))
     snap_states.append(np.asarray(sol))
     print(f" step {min((chunk + 1) * snap_every, n_steps_est):5d}/{n_steps_est} "
           f"t/t_rec={t_s/t_rec:6.3f} R/R_S={radii[-1]/R_S:7.4f} "
           f"x_max={x3d.max():.4f}")
+
+
+
+IDX_RHO = eq_rt.n_cons + eq_hydro.mass_ids
+IDX_MX = eq_rt.n_cons + eq_hydro.vel_ids[0]
+IDX_MY = eq_rt.n_cons + eq_hydro.vel_ids[1]
+IDX_MZ = eq_rt.n_cons + eq_hydro.vel_ids[2]
+IDX_ETOT = eq_rt.n_cons + eq_hydro.energy_ids
+IDX_RHO_XHII = eq_rt.n_cons + eq_hydro.passive_slice.start
+
+rho_final = np.asarray(sol[IDX_RHO], dtype=np.float64)
+mx_final = np.asarray(sol[IDX_MX], dtype=np.float64)
+my_final = np.asarray(sol[IDX_MY], dtype=np.float64)
+mz_final = np.asarray(sol[IDX_MZ], dtype=np.float64)
+
+vx_final = mx_final / np.maximum(rho_final, 1e-300)
+vy_final = my_final / np.maximum(rho_final, 1e-300)
+vz_final = mz_final / np.maximum(rho_final, 1e-300)
+speed_final = np.sqrt(vx_final**2 + vy_final**2 + vz_final**2)
+
+print("=" * 72)
+print("STATIC-GAS CHECK")
+print(f"rho/rho0 min/max = {rho_final.min()/rho_code:.8e} / {rho_final.max()/rho_code:.8e}")
+print(f"|v| code min/max = {speed_final.min():.8e} / {speed_final.max():.8e}")
+print(f"|v| cgs max = {speed_final.max() * cu.V_cgs:.8e} cm/s")
+print("=" * 72)
 
 times = np.asarray(times)
 radii = np.asarray(radii)
@@ -309,7 +407,7 @@ axes[1].set(xlabel="x [pc]", ylabel="y [pc]", title=fr"$x_{{HII}}$, t={times[-1]
 axes[1].legend()
 fig.colorbar(im, ax=axes[1], label="x_HII")
 fig.tight_layout()
-fig.savefig(os.path.join(out_dir, f"stromgren_N{N}_New.png"), dpi=150, bbox_inches="tight")
+fig.savefig(os.path.join(out_dir, f"stromgren_N{N}_New_1.png"), dpi=150, bbox_inches="tight")
 plt.close(fig)
 
 # Final-field PNGs and CSV cubes
@@ -371,3 +469,4 @@ if MAKE_GIFS:
             image.close()
 
 print(f"Outputs written to {out_dir}")
+

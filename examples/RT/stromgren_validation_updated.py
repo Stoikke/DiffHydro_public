@@ -31,7 +31,7 @@ print("Backend:", jax.default_backend())
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-N = int(os.environ.get("N", 50))
+N = int(os.environ.get("N", 32))
 n_H_cgs = 1.0e-3
 T_K = 1.0e4
 Q_phot = 5.0e48
@@ -132,6 +132,7 @@ chem_force = HydrogenPhotoChemistryForce(
     max_frac=0.9,
     include_heating=False,
     include_cooling=False,
+    fixed_temperature_K=T_K,
 )
 
 sim = dh.hydro(
