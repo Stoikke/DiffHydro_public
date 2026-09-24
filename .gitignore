@@ -4,3 +4,5 @@
 **/.pyc
 **/__pycache__/
 examples/RT/Images/
+DiffHydro_public/examples/RT/Images/stromgren_validation_updated/
+DiffHydro_public/examples/RT/Images/stromgren_validation_fixed/
