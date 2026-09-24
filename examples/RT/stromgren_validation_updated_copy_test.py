@@ -173,6 +173,23 @@ def ionized_radius(x3d):
     V = float(np.sum(np.asarray(x3d, dtype=np.float64))) * dx_cgs**3
     return (3.0 * V / (4.0 * np.pi)) ** (1.0 / 3.0)
 
+def directional_radius(x3d, axis, threshold=0.5):
+    x3d = np.asarray(x3d, dtype=np.float64)
+    if axis == 0:
+        line = x3d[:, center, center]
+    elif axis == 1:
+        line = x3d[center, :, center]
+    elif axis == 2:
+        line = x3d[center, center, :]
+    else:
+        raise ValueError("axis must be 0, 1 or 2")
+    idx = np.where(line >= threshold)[0]
+    if idx.size == 0:
+        return 0.0
+    r_pos = max(0.0, (idx.max() - center)) * dx_cgs
+    r_neg = max(0.0, (center - idx.min())) * dx_cgs
+    return 0.5 * (r_pos + r_neg)
+
 @jax.jit
 def run_chunk(state, pars, step0):
     def body(j, carry):
@@ -216,12 +233,16 @@ print("=" * 72)
 # ---------------------------------------------------------------------------
 # Outputs
 # ---------------------------------------------------------------------------
-out_dir = os.path.join(REPO_ROOT, "examples/RT/Images/stromgren_validation_updated")
+out_dir = os.path.join(REPO_ROOT, "examples/RT/Images/stromgren_validation_updated_copy_test")
 os.makedirs(out_dir, exist_ok=True)
 np.savetxt(os.path.join(out_dir, f"history_N{N}.csv"), np.column_stack([times, radii, analytic, radii / np.maximum(analytic, 1e-300)]), delimiter=",", header="time_s,radius_cm,analytic_radius_cm,ratio", comments="")
 
 x_final = xHII_from_conservative(sol)
 np.savetxt(os.path.join(out_dir, f"radial_profile_N{N}.csv"), np.column_stack([np.arange(N), np.nanmean(x_final, axis=(1, 2))]), delimiter=",", header="index,xHII_mean", comments="")
+rx = directional_radius(x_final, axis=0)
+ry = directional_radius(x_final, axis=1)
+rz = directional_radius(x_final, axis=2)
+print(f" directional radii (x_HII>=0.5): Rx/R_S={rx/R_S:.4f}, Ry/R_S={ry/R_S:.4f}, Rz/R_S={rz/R_S:.4f}")
 
 # Main validation figure
 fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
@@ -238,6 +259,7 @@ im = axes[1].imshow(x_slice.T, origin="lower", cmap="magma", vmin=0, vmax=1, ext
 th = np.linspace(0, 2 * np.pi, 200)
 axes[1].plot(R_S / 3.0857e18 * np.cos(th), R_S / 3.0857e18 * np.sin(th), "c--", lw=1.5, label="R_S")
 axes[1].set(xlabel="x [pc]", ylabel="y [pc]", title=fr"$x_{{HII}}$, t={times[-1]/t_rec:.2f} t_rec")
+axes[1].set_aspect("equal", adjustable="box")
 axes[1].legend()
 fig.colorbar(im, ax=axes[1], label="x_HII")
 fig.tight_layout()
