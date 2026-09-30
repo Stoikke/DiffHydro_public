@@ -31,12 +31,21 @@ print("Backend:", jax.default_backend())
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-N = int(os.environ.get("N", 32))
+N = int(os.environ.get("N", 99))
 n_H_cgs = 1.0e-3
 T_K = 1.0e4
 Q_phot = 5.0e48
 GAMMA = 5.0 / 3.0
-RSLA = float(os.environ.get("RSLA", 2.0e-2))
+RSLA = float(os.environ.get("RSLA", 2.0e-2)) 
+# problem peut etre ici 
+# env N=33 RSLA=2e-2 TEND=5 NSTEP=1200 MAKE_GIFS=0 \
+# python DiffHydro_public/examples/RT/stromgren_validation_updated.py | tee /tmp/stromgren_orig_N33.log
+
+# env N=33 RSLA=2e-2 TEND=5 NSTEP=1200 MAKE_GIFS=0 \
+# python DiffHydro_public/examples/RT/stromgren_validation_updated_copy.py | tee /tmp/stromgren_copy_N33.log
+
+# grep -E "mean relative error|final R_I|directional radii" /tmp/stromgren_orig_N33.log /tmp/stromgren_copy_N33.log
+
 TEND_REC = float(os.environ.get("TEND", 5.0))
 CFL = 0.1
 NSTEP = int(os.environ.get("NSTEP", 5000))

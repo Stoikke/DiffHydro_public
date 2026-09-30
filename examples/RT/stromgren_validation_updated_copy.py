@@ -173,7 +173,7 @@ def ionized_radius(x3d):
     V = float(np.sum(np.asarray(x3d, dtype=np.float64))) * dx_cgs**3
     return (3.0 * V / (4.0 * np.pi)) ** (1.0 / 3.0)
 
-def directional_radius(x3d, axis, threshold=0.5):
+def directional_radius(x3d, axis, threshold=0.9):
     x3d = np.asarray(x3d, dtype=np.float64)
     if axis == 0:
         line = x3d[:, center, center]
