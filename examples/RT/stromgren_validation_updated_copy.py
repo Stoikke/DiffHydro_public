@@ -31,30 +31,19 @@ print("Backend:", jax.default_backend())
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-N = int(os.environ.get("N", 99))
+N = int(os.environ.get("N", 33))
 n_H_cgs = 1.0e-3
 T_K = 1.0e4
 Q_phot = 5.0e48
 GAMMA = 5.0 / 3.0
-RSLA = float(os.environ.get("RSLA", 2.0e-2)) 
-# problem peut etre ici 
-# env N=33 RSLA=2e-2 TEND=5 NSTEP=1200 MAKE_GIFS=0 \
-# python DiffHydro_public/examples/RT/stromgren_validation_updated.py | tee /tmp/stromgren_orig_N33.log
-
-# env N=33 RSLA=2e-2 TEND=5 NSTEP=1200 MAKE_GIFS=0 \
-# python DiffHydro_public/examples/RT/stromgren_validation_updated_copy.py | tee /tmp/stromgren_copy_N33.log
-
-# grep -E "mean relative error|final R_I|directional radii" /tmp/stromgren_orig_N33.log /tmp/stromgren_copy_N33.log
-
+RSLA = float(os.environ.get("RSLA", 2.0e-2))
 TEND_REC = float(os.environ.get("TEND", 5.0))
-CFL = 0.1
+CFL = 0.4
 NSTEP = int(os.environ.get("NSTEP", 5000))
 MAKE_GIFS = os.environ.get("MAKE_GIFS", "0") == "1"
 GIF_FRAMES = int(os.environ.get("GIF_FRAMES", 25))
-LIMITER = "VANLEER"
+LIMITER = "MINMOD"
 FMAX = 0.75
-FIXED_TEMPERATURE = os.environ.get("FIXED_TEMPERATURE", "1") == "1"
-STATIC_GAS = os.environ.get("STATIC_GAS", "1") == "1"
 
 alpha_B = float(hchem.alpha_B_HII_cgs(T_K))
 R_S = (3.0 * Q_phot / (4.0 * np.pi * alpha_B * n_H_cgs**2)) ** (1.0 / 3.0)
@@ -103,18 +92,6 @@ class StateBlockFlux:
     def timestep(self, sol):
         return self.base_flux.timestep(sol[self.state_slice])
 
-
-class ZeroFlux:
-    """Keep the gas uniform for the classical fixed-density Stromgren test."""
-    def __init__(self, dx):
-        self.dx_o = dx
-
-    def flux(self, sol, ax, params, flux):
-        return jnp.zeros_like(sol)
-
-    def timestep(self, sol):
-        return jnp.inf
-
 rt_flux = StateBlockFlux(
     dh.ConvectiveFlux_Radiative_transfer(
         eq_rt,
@@ -138,7 +115,7 @@ stellar = StellarRadiationForce(
     dx=dx_code,
     injection_mode="stromgren",
     stromgren_rate=Q_phot * cu.T_cgs,
-    injection_momentum=not STATIC_GAS,
+    injection_momentum=False,
     injection_geometry="radial_3D",
     gaussian_star=True,
     beam_momentum_scaling="legacy_c2_source2",
@@ -153,14 +130,9 @@ chem_force = HydrogenPhotoChemistryForce(
     case="B",
     collisional=False,
     max_frac=0.9,
-    include_heating= False,#not FIXED_TEMPERATURE,
-    include_cooling= False,#not FIXED_TEMPERATURE,
-    mean_photon_energy_eV=13.6,
-    fixed_temperature_K=T_K if FIXED_TEMPERATURE else None,
+    include_heating=False,
+    include_cooling=False,
 )
-
-if STATIC_GAS:
-    hydro_flux = ZeroFlux(dx_code)
 
 sim = dh.hydro(
     n_super_step=n_super_step,
@@ -200,6 +172,23 @@ def xHII_from_conservative(state):
 def ionized_radius(x3d):
     V = float(np.sum(np.asarray(x3d, dtype=np.float64))) * dx_cgs**3
     return (3.0 * V / (4.0 * np.pi)) ** (1.0 / 3.0)
+
+def directional_radius(x3d, axis, threshold=0.9):
+    x3d = np.asarray(x3d, dtype=np.float64)
+    if axis == 0:
+        line = x3d[:, center, center]
+    elif axis == 1:
+        line = x3d[center, :, center]
+    elif axis == 2:
+        line = x3d[center, center, :]
+    else:
+        raise ValueError("axis must be 0, 1 or 2")
+    idx = np.where(line >= threshold)[0]
+    if idx.size == 0:
+        return 0.0
+    r_pos = max(0.0, (idx.max() - center)) * dx_cgs
+    r_neg = max(0.0, (center - idx.min())) * dx_cgs
+    return 0.5 * (r_pos + r_neg)
 
 @jax.jit
 def run_chunk(state, pars, step0):
@@ -244,12 +233,16 @@ print("=" * 72)
 # ---------------------------------------------------------------------------
 # Outputs
 # ---------------------------------------------------------------------------
-out_dir = os.path.join(REPO_ROOT, "examples/RT/Images/stromgren_validation_updated")
+out_dir = os.path.join(REPO_ROOT, "examples/RT/Images/stromgren_validation_updated_copy_test")
 os.makedirs(out_dir, exist_ok=True)
 np.savetxt(os.path.join(out_dir, f"history_N{N}.csv"), np.column_stack([times, radii, analytic, radii / np.maximum(analytic, 1e-300)]), delimiter=",", header="time_s,radius_cm,analytic_radius_cm,ratio", comments="")
 
 x_final = xHII_from_conservative(sol)
 np.savetxt(os.path.join(out_dir, f"radial_profile_N{N}.csv"), np.column_stack([np.arange(N), np.nanmean(x_final, axis=(1, 2))]), delimiter=",", header="index,xHII_mean", comments="")
+rx = directional_radius(x_final, axis=0)
+ry = directional_radius(x_final, axis=1)
+rz = directional_radius(x_final, axis=2)
+print(f" directional radii (x_HII>=0.5): Rx/R_S={rx/R_S:.4f}, Ry/R_S={ry/R_S:.4f}, Rz/R_S={rz/R_S:.4f}")
 
 # Main validation figure
 fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
@@ -266,6 +259,7 @@ im = axes[1].imshow(x_slice.T, origin="lower", cmap="magma", vmin=0, vmax=1, ext
 th = np.linspace(0, 2 * np.pi, 200)
 axes[1].plot(R_S / 3.0857e18 * np.cos(th), R_S / 3.0857e18 * np.sin(th), "c--", lw=1.5, label="R_S")
 axes[1].set(xlabel="x [pc]", ylabel="y [pc]", title=fr"$x_{{HII}}$, t={times[-1]/t_rec:.2f} t_rec")
+axes[1].set_aspect("equal", adjustable="box")
 axes[1].legend()
 fig.colorbar(im, ax=axes[1], label="x_HII")
 fig.tight_layout()
