@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/home/adrien/DiffHydro_public/examples/RT/serveur/stromgren_validation_simple_node.py", line 80, in <module>
+    import diffhydro as dh
+ModuleNotFoundError: No module named 'diffhydro'
+srun: error: igpu06: task 0: Exited with exit code 1

@@ -1,0 +1,47 @@
+Backend: gpu
+Local devices = 4, global devices = 4
+Devices: [CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+Backend: gpu [CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+======================================================================
+ ULEN = 4.753619e+22 cm
+ BOX = 4.753619e+22 cm
+ UVEL = 2.997925e+07 cm/s
+ dx_code = 1.000000e-01
+ dx_phys_cgs = 4.753619e+21 cm
+ L_cgs = 4.753619e+22 cm
+ V_cgs = 2.997925e+07 cm/s
+ T_cgs = 1.585637e+15 s
+ Temp_cgs = 1.089429e+07 K
+ time_code = 1.216641e+01
+ source_rate_code = 7.928183e+63
+ dt_cfl = 1.333333e-02
+ max_dt = 1.333333e-02
+ estimated n_steps = 913 (n_super_step = 5000)
+======================================================================
+ eps_code = 1.000e-30
+ source/step = 1.057091e+65 [ph/vol code]
+Running to t = 1.929150e+16 s = 1.216641e+01 code
+DEBUG reduced flux min/max/mean = 2.7194136013736086e-12 0.7500000000000002 0.7327864029240253
+DEBUG reduced flux axis/diag max = 0.75 0.7500000000000001
+DEBUG radial flux fraction mean/max = 0.9832853416296358 1.0000000000000002
+DEBUG transverse flux fraction mean/max = 0.11552917014987475 0.5158086533365862
+Done.
+ steps = 913
+ sum(dt) = 1.217333e+01 code = 1.930248e+16 s
+ target = 1.216641e+01 code
+ E_gamma min/max/negative = 5.069129e+43 / 1.564731e+64 / 0
+ photons in box = 4.481235e+62
+ photons injected = 9.651242e+64
+ radiation-only ratio = 4.643169e-03
+ NOTE: photons absorbed by chemistry are not included in photons_in_box.
+ x_HII min/max/mean = 1.112344e-18 / 9.793891e-01 / 1.136626e-01
+ x_HII out of bounds = 0
+======================================================================
+ alpha_B = 2.591816e-13 cm^3 s^-1
+ R_stromgren = 1.663767e+22 cm
+ R_I(t) = 1.660021e+22 cm
+ simulated interpolated front = nan cells = nan cm
+ ratio simulated / analytic = nan
+ ionized H atoms = 1.220930e+64
+ injected photons / ionized atoms = 7.904830e+00
+Outputs written to: /home/adrien/DiffHydro_public/examples/examples/RT/Images/N10_ulen4.75362e+22cm_box4.75362e+22cm_uvel2.99792e+07cmps_src5.00e+48phs_t1.92915e+16s

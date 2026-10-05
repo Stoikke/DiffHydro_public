@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/home/adrien/DiffHydro_public/examples/RT/serveur/RT_run_chat_v5.py", line 221, in <module>
+    hydrosim_test = dh.hydro(
+                    ^^^^^^^^^
+  File "/home/adrien/DiffHydro_public/diffhydro/hydro_core.py", line 190, in __init__
+    devices = mesh_utils.create_device_mesh(self.pmesh_shape)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/adrien/miniconda3/envs/astro-env/lib/python3.11/site-packages/jax/_src/mesh_utils.py", line 825, in create_device_mesh
+    raise ValueError(
+ValueError: Number of devices 4 must equal the product of mesh_shape (1, 1, 1)
+srun: error: igpu06: task 0: Exited with exit code 1

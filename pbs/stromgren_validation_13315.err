@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/home/adrien/DiffHydro_public/examples/RT/serveur/RT_run_chat_v5.py", line 119, in <module>
+    raise ValueError(f"UVEL must equal reduced light speed {c_red_cgs:.8e} cm/s")
+ValueError: UVEL must equal reduced light speed 2.99792458e+07 cm/s
+srun: error: igpu04: task 0: Exited with exit code 1

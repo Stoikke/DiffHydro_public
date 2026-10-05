@@ -1,0 +1,5 @@
+  File "/home/adrien/DiffHydro_public/examples/RT/serveur/RT_run_chat_v5.py", line 248
+    p_ambient_code = p_ambient_cgs / cu.P_cgssol_test = sol_test.at[idx_rho_local].set(rho_ambient_code)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+SyntaxError: cannot assign to expression
+srun: error: igpu06: task 0: Exited with exit code 1

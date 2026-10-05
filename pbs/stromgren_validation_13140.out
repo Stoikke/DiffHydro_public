@@ -1,0 +1,118 @@
+============================================================
+Job ID        : 13140
+Node          : igpu06
+Start date    : 2026-08-24 20:50:40 JST
+GPUs visible  : 0,1,2,3
+Working dir   : /home/adrien/DiffHydro_public
+============================================================
+
+============================================================
+START 1/2 — Stromgren validation
+============================================================
+Backend: gpu
+Local devices = 4, global devices = 4
+Devices: [CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+NCCL loaded OK: <CDLL 'libnccl.so.2', handle 57d10cee6ea0 at 0x762ec3dedad0>
+NCCL loaded OK: <CDLL 'libnccl.so.2', handle 57d10cee6ea0 at 0x762ec3dfa390>
+========================================================================
+ N=150, dx=3.169079e+20 cm, box=4.753619e+22 cm
+ Q=5.000000e+48 ph/s, alpha_B=2.591816e-13 cm^3/s
+ R_S=1.663767e+22 cm, t_rec=3.858299e+15 s
+ RSLA=2.000000e-02, c_red=5.995849e+08 cm/s
+ time_code=3.649921e+04, dt_code=1.333333e-01
+ estimated n_steps=273745, n_super_step=273755
+========================================================================
+ step 22812/273745 t/t_rec= 0.417 R/R_S= 0.6696 x_max=0.9997
+ step 45624/273745 t/t_rec= 0.833 R/R_S= 0.7694 x_max=0.9997
+ step 68436/273745 t/t_rec= 1.250 R/R_S= 0.8132 x_max=0.9997
+ step 91248/273745 t/t_rec= 1.667 R/R_S= 0.8355 x_max=0.9997
+ step 114060/273745 t/t_rec= 2.083 R/R_S= 0.8480 x_max=0.9997
+ step 136872/273745 t/t_rec= 2.500 R/R_S= 0.8556 x_max=0.9997
+ step 159684/273745 t/t_rec= 2.917 R/R_S= 0.8604 x_max=0.9997
+ step 182496/273745 t/t_rec= 3.333 R/R_S= 0.8637 x_max=0.9997
+ step 205308/273745 t/t_rec= 3.750 R/R_S= 0.8660 x_max=0.9997
+ step 228120/273745 t/t_rec= 4.167 R/R_S= 0.8676 x_max=0.9997
+ step 250932/273745 t/t_rec= 4.583 R/R_S= 0.8689 x_max=0.9997
+ step 273744/273745 t/t_rec= 5.000 R/R_S= 0.8699 x_max=0.9997
+ step 273745/273745 t/t_rec= 5.000 R/R_S= 0.8699 x_max=0.9997
+========================================================================
+ final R_I=1.447242e+22 cm, analytic=1.660022e+22 cm, ratio=0.871821
+ mean relative error=10.976%
+========================================================================
+Outputs written to /home/adrien/DiffHydro_public/examples/examples/RT/Images/stromgren_validation_updated
+END 1/2 — Stromgren validation
+Exit code     : 0
+Elapsed       : 03h 28m 42s
+Elapsed raw   : 12522 s
+Finished at   : 2026-08-25 00:19:22 JST
+============================================================
+
+============================================================
+START 2/2 — RT_run_chat_v5
+============================================================
+Backend: gpu
+Local devices = 4, global devices = 4
+Devices: [CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+Backend: gpu [CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+======================================================================
+ ULEN = 4.753619e+22 cm
+ BOX = 4.753619e+22 cm
+ UVEL = 2.997925e+07 cm/s
+ dx_code = 6.666667e-03
+ dx_phys_cgs = 3.169079e+20 cm
+ L_cgs = 4.753619e+22 cm
+ V_cgs = 2.997925e+07 cm/s
+ T_cgs = 1.585637e+15 s
+ Temp_cgs = 1.089429e+07 K
+ time_code = 1.216641e+01
+ source_rate_code = 7.928183e+63
+ dt_cfl = 8.888889e-04
+ max_dt = 8.888889e-04
+ estimated n_steps = 13688 (n_super_step = 5000)
+======================================================================
+ eps_code = 1.000e-30
+ source/step = 2.378455e+67 [ph/vol code]
+Running to t = 1.929150e+16 s = 1.216641e+01 code
+DEBUG reduced flux min/max/mean = 0.0 1.0000000000000004 0.9744054580244298
+DEBUG reduced flux axis/diag max = 0.9999999999999999 1.0000000000000002
+DEBUG radial flux fraction mean/max = 0.9705028614213113 1.0000000000000002
+DEBUG transverse flux fraction mean/max = 0.04900967285750093 0.9999999879764203
+Done.
+ steps = 5000
+ sum(dt) = 4.444444e+00 code = 7.047274e+15 s
+ target = 1.216641e+01 code
+ E_gamma min/max/negative = 0.000000e+00 / 8.921567e+65 / 0
+ photons in box = 1.499617e+63
+ photons injected = 3.523637e+64
+ radiation-only ratio = 4.255878e-02
+ NOTE: photons absorbed by chemistry are not included in photons_in_box.
+ x_HII min/max/mean = 5.478541e-63 / 9.995142e-01 / 8.304896e-02
+ x_HII out of bounds = 0
+======================================================================
+ alpha_B = 2.591816e-13 cm^3 s^-1
+ R_stromgren = 1.663767e+22 cm
+ R_I(t) = 1.660021e+22 cm
+ simulated interpolated front = nan cells = nan cm
+ ratio simulated / analytic = nan
+ ionized H atoms = 8.920873e+63
+ injected photons / ionized atoms = 3.949879e+00
+Outputs written to: /home/adrien/DiffHydro_public/examples/examples/RT/Images/N150_ulen4.75362e+22cm_box4.75362e+22cm_uvel2.99792e+07cmps_src5.00e+48phs_t1.92915e+16s
+END 2/2 — RT_run_chat_v5
+Exit code     : 0
+Elapsed       : 00h 33m 19s
+Elapsed raw   : 1999 s
+Finished at   : 2026-08-25 00:52:41 JST
+============================================================
+
+============================================================
+RUNTIME SUMMARY
+============================================================
+Stromgren validation:            03h 28m 42s
+RT_run_chat_v5:                  00h 33m 19s
+Total bash job runtime:          04h 02m 01s
+
+Stromgren raw:                   12522 s
+RT_run_chat_v5 raw:              1999 s
+Total raw:                       14521 s
+End date      : 2026-08-25 00:52:41 JST
+============================================================

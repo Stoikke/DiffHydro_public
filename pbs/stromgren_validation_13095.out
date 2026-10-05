@@ -1,0 +1,3 @@
+Backend: gpu
+Local devices = 4, global devices = 4
+Devices: [CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]

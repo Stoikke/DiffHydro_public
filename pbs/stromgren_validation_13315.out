@@ -1,0 +1,93 @@
+============================================================
+Job ID        : 13315
+Node          : igpu04
+Start date    : 2026-08-26 10:38:20 JST
+GPUs visible  : 0,1,2,3
+Working dir   : /home/adrien/DiffHydro_public
+============================================================
+
+============================================================
+START 1/2 — Stromgren validation
+============================================================
+Backend: gpu
+Local devices = 4, global devices = 4
+Devices: [CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+NCCL loaded OK: <CDLL 'libnccl.so.2', handle 569c930f13b0 at 0x7e04640d2350>
+NCCL loaded OK: <CDLL 'libnccl.so.2', handle 569c930f13b0 at 0x7e046408bb90>
+========================================================================
+ N=150, dx=3.169079e+20 cm, box=4.753619e+22 cm
+ Q=5.000000e+48 ph/s, alpha_B=2.591816e-13 cm^3/s
+ R_S=1.663767e+22 cm, t_rec=3.858299e+15 s
+ RSLA=2.000000e-02, c_red=5.995849e+08 cm/s
+ time_code=3.649921e+04, dt_code=1.333333e-01
+ estimated n_steps=273745, n_super_step=273755
+========================================================================
+ budget: emit=8.0381e+63 HII=5.7956e+63 gamma=8.1296e+61 recomb=2.2699e+63 closure=1.01353
+ step 22812/273745 t/t_rec= 0.417 R/R_S= 0.6697 x_max=0.9999
+ budget: emit=1.6076e+64 HII=8.8109e+63 gamma=8.6830e+61 recomb=5.6931e+63 closure=0.90760
+ step 45624/273745 t/t_rec= 0.833 R/R_S= 0.7701 x_max=0.9999
+ budget: emit=2.4114e+64 HII=1.0416e+64 gamma=8.8100e+61 recomb=9.7004e+63 closure=0.83786
+ step 68436/273745 t/t_rec= 1.250 R/R_S= 0.8143 x_max=0.9999
+ budget: emit=3.2152e+64 HII=1.1311e+64 gamma=8.8458e+61 recomb=1.4013e+64 closure=0.79037
+ step 91248/273745 t/t_rec= 1.667 R/R_S= 0.8370 x_max=0.9999
+ budget: emit=4.0191e+64 HII=1.1836e+64 gamma=8.8574e+61 recomb=1.8492e+64 closure=0.75682
+ step 114060/273745 t/t_rec= 2.083 R/R_S= 0.8497 x_max=0.9999
+ budget: emit=4.8229e+64 HII=1.2163e+64 gamma=8.8618e+61 recomb=2.3066e+64 closure=0.73229
+ step 136872/273745 t/t_rec= 2.500 R/R_S= 0.8575 x_max=0.9999
+ budget: emit=5.6267e+64 HII=1.2376e+64 gamma=8.8636e+61 recomb=2.7696e+64 closure=0.71375
+ step 159684/273745 t/t_rec= 2.917 R/R_S= 0.8625 x_max=0.9999
+ budget: emit=6.4305e+64 HII=1.2521e+64 gamma=8.8645e+61 recomb=3.2362e+64 closure=0.69935
+ step 182496/273745 t/t_rec= 3.333 R/R_S= 0.8658 x_max=0.9999
+ budget: emit=7.2343e+64 HII=1.2625e+64 gamma=8.8649e+61 recomb=3.7051e+64 closure=0.68789
+ step 205308/273745 t/t_rec= 3.750 R/R_S= 0.8682 x_max=0.9999
+ budget: emit=8.0381e+64 HII=1.2701e+64 gamma=8.8651e+61 recomb=4.1756e+64 closure=0.67858
+ step 228120/273745 t/t_rec= 4.167 R/R_S= 0.8699 x_max=0.9999
+ budget: emit=8.8419e+64 HII=1.2759e+64 gamma=8.8652e+61 recomb=4.6471e+64 closure=0.67088
+ step 250932/273745 t/t_rec= 4.583 R/R_S= 0.8713 x_max=0.9999
+ budget: emit=9.6457e+64 HII=1.2804e+64 gamma=8.8653e+61 recomb=5.1195e+64 closure=0.66441
+ step 273744/273745 t/t_rec= 5.000 R/R_S= 0.8723 x_max=0.9999
+ budget: emit=9.6458e+64 HII=1.2804e+64 gamma=8.8653e+61 recomb=5.1195e+64 closure=0.66441
+ step 273745/273745 t/t_rec= 5.000 R/R_S= 0.8723 x_max=0.9999
+========================================================================
+STATIC-GAS CHECK
+rho/rho0 min/max = 1.00000000e+00 / 1.00000000e+00
+|v| code min/max = 0.00000000e+00 / 0.00000000e+00
+|v| cgs max = 0.00000000e+00 cm/s
+========================================================================
+========================================================================
+ final R_I=1.451271e+22 cm, analytic=1.660022e+22 cm, ratio=0.874248
+ mean relative error=10.794%
+========================================================================
+Outputs written to /home/adrien/DiffHydro_public/examples/examples/RT/Images/stromgren_validation_updated
+END 1/2 — Stromgren validation
+Exit code     : 0
+Elapsed       : 03h 29m 36s
+Elapsed raw   : 12576 s
+Finished at   : 2026-08-26 14:07:56 JST
+============================================================
+
+============================================================
+START 2/2 — RT_run_chat_v5
+============================================================
+Backend: gpu
+Local devices = 4, global devices = 4
+Devices: [CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+END 2/2 — RT_run_chat_v5
+Exit code     : 1
+Elapsed       : 00h 00m 05s
+Elapsed raw   : 5 s
+Finished at   : 2026-08-26 14:08:01 JST
+============================================================
+
+============================================================
+RUNTIME SUMMARY
+============================================================
+Stromgren validation:            03h 29m 36s
+RT_run_chat_v5:                  00h 00m 05s
+Total bash job runtime:          03h 29m 41s
+
+Stromgren raw:                   12576 s
+RT_run_chat_v5 raw:              5 s
+Total raw:                       12581 s
+End date      : 2026-08-26 14:08:01 JST
+============================================================

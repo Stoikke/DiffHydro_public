@@ -1,0 +1,22 @@
+============================================================
+Job ID        : 12975
+Node          : igpu06
+Start date    : 2026-08-21 17:56:54 JST
+GPUs visible  : 0,1,2,3
+Working dir   : /home/adrien/DiffHydro_public
+============================================================
+
+============================================================
+START 1/2 — Stromgren validation
+============================================================
+Backend: gpu
+Local devices = 4, global devices = 4
+Devices: [CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+NCCL loaded OK: <CDLL 'libnccl.so.2', handle 63b713234dd0 at 0x74df42b82590>
+END 1/2 — Stromgren validation
+Exit code     : 1
+Elapsed       : 00h 00m 06s
+Elapsed raw   : 6 s
+Finished at   : 2026-08-21 17:57:00 JST
+============================================================
+ERROR: Stromgren validation failed; second simulation is not started.

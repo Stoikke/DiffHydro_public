@@ -1,0 +1,93 @@
+============================================================
+Job ID        : 13050
+Node          : igpu06
+Start date    : 2026-08-22 21:37:09 JST
+GPUs visible  : 0,1,2,3
+Working dir   : /home/adrien/DiffHydro_public
+============================================================
+
+============================================================
+START 1/2 — Stromgren validation
+============================================================
+Backend: gpu
+Local devices = 4, global devices = 4
+Devices: [CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+NCCL loaded OK: <CDLL 'libnccl.so.2', handle 6492445e9270 at 0x72466b1fdd90>
+NCCL loaded OK: <CDLL 'libnccl.so.2', handle 6492445e9270 at 0x7243efd47350>
+========================================================================
+ N=150, dx=3.169079e+20 cm, box=4.753619e+22 cm
+ Q=5.000000e+48 ph/s, alpha_B=2.591816e-13 cm^3/s
+ R_S=1.663767e+22 cm, t_rec=3.858299e+15 s
+ RSLA=2.000000e-02, c_red=5.995849e+08 cm/s
+ time_code=3.649921e+04, dt_code=1.333333e-01
+ estimated n_steps=273745, n_super_step=273755
+========================================================================
+ step 22812/273745 t/t_rec= 0.417 R/R_S= 0.6683 x_max=0.9998
+ step 45624/273745 t/t_rec= 0.833 R/R_S= 0.7674 x_max=0.9998
+ step 68436/273745 t/t_rec= 1.250 R/R_S= 0.8103 x_max=0.9998
+ step 91248/273745 t/t_rec= 1.667 R/R_S= 0.8319 x_max=0.9998
+ step 114060/273745 t/t_rec= 2.083 R/R_S= 0.8437 x_max=0.9998
+ step 136872/273745 t/t_rec= 2.500 R/R_S= 0.8507 x_max=0.9998
+ step 159684/273745 t/t_rec= 2.917 R/R_S= 0.8551 x_max=0.9998
+ step 182496/273745 t/t_rec= 3.333 R/R_S= 0.8580 x_max=0.9998
+ step 205308/273745 t/t_rec= 3.750 R/R_S= 0.8600 x_max=0.9998
+ step 228120/273745 t/t_rec= 4.167 R/R_S= 0.8615 x_max=0.9998
+ step 250932/273745 t/t_rec= 4.583 R/R_S= 0.8626 x_max=0.9998
+ step 273744/273745 t/t_rec= 5.000 R/R_S= 0.8634 x_max=0.9998
+ step 273745/273745 t/t_rec= 5.000 R/R_S= 0.8634 x_max=0.9998
+========================================================================
+ final R_I=1.436507e+22 cm, analytic=1.660022e+22 cm, ratio=0.865354
+ mean relative error=11.464%
+========================================================================
+Outputs written to /home/adrien/DiffHydro_public/examples/examples/RT/Images/stromgren_validation_updated
+END 1/2 — Stromgren validation
+Exit code     : 0
+Elapsed       : 03h 28m 38s
+Elapsed raw   : 12518 s
+Finished at   : 2026-08-23 01:05:47 JST
+============================================================
+
+============================================================
+START 2/2 — RT_run_chat_v5
+============================================================
+Backend: gpu
+Local devices = 4, global devices = 4
+Devices: [CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+Backend: gpu [CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+======================================================================
+ ULEN = 4.753619e+22 cm
+ BOX = 4.753619e+22 cm
+ UVEL = 2.997925e+07 cm/s
+ dx_code = 6.666667e-03
+ dx_phys_cgs = 3.169079e+20 cm
+ L_cgs = 4.753619e+22 cm
+ V_cgs = 2.997925e+07 cm/s
+ T_cgs = 1.585637e+15 s
+ Temp_cgs = 1.089429e+07 K
+ time_code = 1.216641e+01
+ source_rate_code = 7.928183e+63
+ dt_cfl = 8.888889e-04
+ max_dt = 8.888889e-04
+ estimated n_steps = 13688 (n_super_step = 5000)
+======================================================================
+ eps_code = 1.000e-30
+ source/step = 2.378455e+67 [ph/vol code]
+END 2/2 — RT_run_chat_v5
+Exit code     : 1
+Elapsed       : 00h 00m 05s
+Elapsed raw   : 5 s
+Finished at   : 2026-08-23 01:05:52 JST
+============================================================
+
+============================================================
+RUNTIME SUMMARY
+============================================================
+Stromgren validation:            03h 28m 38s
+RT_run_chat_v5:                  00h 00m 05s
+Total bash job runtime:          03h 28m 43s
+
+Stromgren raw:                   12518 s
+RT_run_chat_v5 raw:              5 s
+Total raw:                       12523 s
+End date      : 2026-08-23 01:05:52 JST
+============================================================

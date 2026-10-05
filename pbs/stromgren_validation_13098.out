@@ -1,0 +1,52 @@
+============================================================
+Job ID        : 13098
+Node          : igpu06
+Start date    : 2026-08-23 20:27:14 JST
+GPUs visible  : 0,1,2,3
+Working dir   : /home/adrien/DiffHydro_public
+============================================================
+
+============================================================
+START 1/2 — Stromgren validation
+============================================================
+Backend: gpu
+Local devices = 4, global devices = 4
+Devices: [CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+NCCL loaded OK: <CDLL 'libnccl.so.2', handle 55b200e46250 at 0x7b5dfa209490>
+NCCL loaded OK: <CDLL 'libnccl.so.2', handle 55b200e46250 at 0x7b5c442804d0>
+========================================================================
+ N=150, dx=3.169079e+20 cm, box=4.753619e+22 cm
+ Q=5.000000e+48 ph/s, alpha_B=2.591816e-13 cm^3/s
+ R_S=1.663767e+22 cm, t_rec=3.858299e+15 s
+ RSLA=2.000000e-02, c_red=5.995849e+08 cm/s
+ time_code=3.649921e+04, dt_code=1.333333e-01
+ estimated n_steps=273745, n_super_step=273755
+========================================================================
+ step 22812/273745 t/t_rec= 0.417 R/R_S= 0.6696 x_max=0.9997
+ step 45624/273745 t/t_rec= 0.833 R/R_S= 0.7694 x_max=0.9997
+ step 68436/273745 t/t_rec= 1.250 R/R_S= 0.8132 x_max=0.9997
+ step 91248/273745 t/t_rec= 1.667 R/R_S= 0.8355 x_max=0.9997
+ step 114060/273745 t/t_rec= 2.083 R/R_S= 0.8480 x_max=0.9997
+ step 136872/273745 t/t_rec= 2.500 R/R_S= 0.8556 x_max=0.9997
+ step 159684/273745 t/t_rec= 2.917 R/R_S= 0.8604 x_max=0.9997
+ step 182496/273745 t/t_rec= 3.333 R/R_S= 0.8637 x_max=0.9997
+ step 205308/273745 t/t_rec= 3.750 R/R_S= 0.8660 x_max=0.9997
+ step 228120/273745 t/t_rec= 4.167 R/R_S= 0.8676 x_max=0.9997
+ step 250932/273745 t/t_rec= 4.583 R/R_S= 0.8689 x_max=0.9997
+ step 273744/273745 t/t_rec= 5.000 R/R_S= 0.8699 x_max=0.9997
+ step 273745/273745 t/t_rec= 5.000 R/R_S= 0.8699 x_max=0.9997
+========================================================================
+ final R_I=1.447242e+22 cm, analytic=1.660022e+22 cm, ratio=0.871821
+ mean relative error=10.976%
+========================================================================
+Outputs written to /home/adrien/DiffHydro_public/examples/examples/RT/Images/stromgren_validation_updated
+END 1/2 — Stromgren validation
+Exit code     : 0
+Elapsed       : 03h 28m 31s
+Elapsed raw   : 12511 s
+Finished at   : 2026-08-23 23:55:45 JST
+============================================================
+
+============================================================
+START 2/2 — RT_run_chat_v5
+============================================================
