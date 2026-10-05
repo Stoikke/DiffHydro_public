@@ -724,7 +724,18 @@ class hydro:
             #         flux_left, zero_face, 0, axis=ax
             #     )
             # rhs = rhs - (fu - flux_left) / self.dx_o #eq 39 qrticle
-            rhs = rhs - (fu - self.roll_with_halo(fu, 1, ax)) / self.dx_o #eq 39 qrticle
+            if self.periodic_flux_divergence:
+                flux_left = self.roll_with_halo(fu, 1, ax)
+            else:
+                # Open physical boundaries: no incoming flux at the lower
+                # face. The upper-face flux remains in the divergence and
+                # therefore leaves the domain instead of wrapping around.
+                flux_left = jnp.roll(fu, 1, axis=ax)
+                zero_face = jnp.zeros_like(jax.lax.slice_in_dim(fu, 0, 1, axis=ax))
+                flux_left = jax.lax.dynamic_update_slice_in_dim(
+                    flux_left, zero_face, 0, axis=ax
+                )
+            rhs = rhs - (fu - flux_left) / self.dx_o # eq 39
         # Neutralizes dB/dt here when CT explicitly manages the magnetic field.
         if getattr(self, "ct", False):
             if sol.shape[0] > self.iBx:

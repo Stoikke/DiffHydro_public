@@ -438,11 +438,32 @@ class HydrogenPhotoChemistryForce:
         N_abs_accounted = N_before - N_after
         ionizations_from_photons = N_abs_eff
 
-        # jax.debug.print(
-        #     "photon residual = {r}",
-        #     r=jnp.max(jnp.abs(N_abs_accounted - ionizations_from_photons))
-        # )
-        # ... (bloc thermodynamique inchange : chauffage/refroidissement) ...
+        # Apply thermal coupling using the same absorbed photons that produced
+        # the photoionisations, then add the independent hydrogen cooling terms.
+        if self.include_heating:
+            dE_heat_cgs = N_abs_eff * self._excess_erg_per_photon
+        else:
+            dE_heat_cgs = 0.0
+
+        if self.include_cooling:
+            cooling_cgs = hchem.cooling_rate_cgs(
+                T_K,
+                n_HI,
+                n_HII,
+                n_e,
+                a=self.expansion_factor,
+                case=self.case,
+            )
+            dE_cool_cgs = hchem.limited_explicit_update(
+                view.thermal_energy_code(sol) * view.P_cgs,
+                -cooling_cgs,
+                dt_s,
+                max_frac=self.energy_max_frac,
+            )
+        else:
+            dE_cool_cgs = 0.0
+
+        sol = view.add_thermal_energy_cgs(sol, dE_heat_cgs + dE_cool_cgs)
 
         if self.fixed_temperature_K is not None:
             sol = view.set_temperature_K(
